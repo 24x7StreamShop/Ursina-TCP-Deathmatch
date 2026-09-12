@@ -101,7 +101,7 @@ class Enemy(ursina.Entity):
             scale=ursina.Vec3(0.1, 0.2, 0.65),
             model="cube",
             texture="white_cube",
-            color=ursina.color.hsv(0, 0, 0.4)
+            color=ursina.color.rgb32(self.color_rgb[0], self.color_rgb[1], self.color_rgb[2])
         )
 
         self.name_tag = ursina.Text(

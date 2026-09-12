@@ -1,6 +1,7 @@
 import ursina
 from ursina.prefabs.first_person_controller import FirstPersonController
 from bullet import Bullet
+from enemy import get_player_color, create_player_texture
 
 
 class Player(FirstPersonController):
@@ -16,6 +17,14 @@ class Player(FirstPersonController):
         )
         self.cursor.color = ursina.color.rgba(255, 0, 0, 122)
 
+        my_id = getattr(network, 'id', '1') if network else '1'
+        my_username = getattr(network, 'username', '') if network else ''
+        self.color_rgb = get_player_color(my_id, my_username)
+        self.gun_color = ursina.color.rgb32(self.color_rgb[0], self.color_rgb[1], self.color_rgb[2])
+
+        self.color = self.gun_color
+        self.texture = create_player_texture(self.color_rgb)
+
         self.gun = ursina.Entity(
             parent=ursina.camera.ui,
             position=ursina.Vec2(0.6, -0.45),
@@ -23,7 +32,7 @@ class Player(FirstPersonController):
             rotation=ursina.Vec3(-20, -20, -5),
             model="cube",
             texture="white_cube",
-            color=ursina.color.hsv(0, 0, 0.4)
+            color=self.gun_color
         )
 
         self.healthbar_pos = ursina.Vec2(0, 0.45)
