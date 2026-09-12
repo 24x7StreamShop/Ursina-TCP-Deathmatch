@@ -1,91 +1,6 @@
-# 🐍 Convert Python Script to EXE (Windows + Linux) using PyInstaller & PyArmor
+# Deathmatch Server
 
-If you've ever made a Python app or game and wanted to **share it without exposing your code**, this guide is for you. We'll cover how to convert a Python `.py` file into a standalone `.exe` on Windows—and also make it executable on Linux (Ubuntu).
-
-> ✅ **Bonus**: We'll protect the source code with [PyArmor](https://pyarmor.readthedocs.io/en/latest/).
-
----
-
-## 📦 Step 1: Install Requirements
-
-First, install the tools:
-
-```bash
-pip install pyinstaller pyarmor
-```
-
----
-
-## 🔒 Step 2: Protect the Script with PyArmor (optional)
-
-To encrypt your `main.py` file:
-
-```bash
-pyarmor gen -O dist main.py
-```
-
-This will generate a protected version inside `dist/main.py`.
-
-You can now use this protected script instead of the original when building the `.exe`.
-
----
-
-## 🛠️ Step 3: Create EXE with PyInstaller
-
-Basic command:
-
-```bash
-pyinstaller --onefile main.py
-```
-
-But we can go further. For example, include:
-
-* Hidden imports like `art`, `json`, etc.
-* A custom icon for branding
-
-```bash
-pyinstaller --onefile ^
---hidden-import=art ^
---hidden-import=json ^
---icon=icon.ico ^
-main.py
-```
-
-> 🖼️ Replace `icon.ico` with your custom icon file.
-
-Once complete, you’ll find the final `.exe` in the `dist/` folder.
-
----
-
-## 📂 Step 4: Run the Executable
-
-Go to the output folder:
-
-```bash
-cd dist
-./main.exe
-```
-
-Or just double-click it from File Explorer in Windows.
-
----
-
-## 🐧 BONUS: Make It Work on Ubuntu/Linux
-
-If you're on Linux and want to run the protected file:
-
-```bash
-cd dist
-file main      # Check architecture
-chmod +x main  # Make it executable
-./main         # Run it
-```
-
-> Make sure your Linux Python environment has the required dependencies.
-
----
-
-## 📸 Screenshots
+This directory contains the TCP server for Ursina-TCP-Deathmatch. The server listens on `0.0.0.0:8888` and accepts up to 10 players.
 
 **Windows EXE output:**
 
@@ -99,21 +14,83 @@ chmod +x main  # Make it executable
 
 ---
 
-## ✅ Summary
+## Run From Python
 
-| Tool          | Purpose                     |
-| ------------- | --------------------------- |
-| `pyinstaller` | Convert `.py` to `.exe`     |
-| `pyarmor`     | Encrypt/protect your script |
-| `icon.ico`    | Add a professional look     |
+Open PowerShell or a terminal in this directory:
 
----
+```powershell
+cd server
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install art
+python main.py
+```
 
-### 🔗 Ready to Share!
+On Windows Command Prompt, activate the environment with:
 
-Once built, you can upload your EXE to:
+```bat
+.venv\Scripts\activate.bat
+```
 
-* Google Drive
-* itch.io
-* Your own website (like `imvickykumar999.online`)
-* Or send it directly via WhatsApp/Telegram
+The server prints its local IPv4 address when it starts. Press `Ctrl+C` to stop it.
+
+## Network Setup
+
+Clients must connect to the server machine's IPv4 address on port `8888`.
+
+For computers on the same network, allow inbound TCP traffic on port `8888` in the server machine's firewall. For internet access, forward TCP port `8888` on the router or configure the TCP tunnel used by your deployment. The port is defined by `PORT` in `main.py` and must match the client configuration.
+
+## Build `server.exe` on Windows
+
+Install PyInstaller in the active environment:
+
+```powershell
+python -m pip install pyinstaller
+```
+
+Build using the checked-in spec file:
+
+```powershell
+pyinstaller --clean --noconfirm server.spec
+```
+
+The executable is created at:
+
+```text
+server\dist\server.exe
+```
+
+Run the built server from the `server` directory:
+
+```powershell
+.\dist\server.exe
+```
+
+The spec file includes the `art` and `json` imports and uses `icon.ico`. If a previous build is causing problems, remove the generated folders and rebuild:
+
+```powershell
+Remove-Item -Recurse -Force build, dist
+pyinstaller --clean --noconfirm server.spec
+```
+
+## Build on Linux
+
+PyInstaller creates executables for the operating system where it runs. Build separately on Linux rather than copying the Windows `.exe`:
+
+```bash
+cd server
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install art pyinstaller
+pyinstaller --clean --noconfirm server.spec
+chmod +x dist/server
+./dist/server
+```
+
+The Linux executable is `dist/server`. Keep the server process running while clients connect, and make sure TCP port `8888` is open in the host firewall.
+
+## Changing the Port
+
+Edit `PORT` in `main.py`, then rebuild the executable if you are using `server.exe`. Clients must use the same port.
