@@ -87,7 +87,7 @@ def get_user_input():
     server_label = tk.Label(frame, text="Enter server address:", font=custom_font, fg='lightblue', bg='#010d25')
     server_label.pack(pady=(20, 10))
 
-    server_var = tk.StringVar(value="10.108.44.204")
+    server_var = tk.StringVar(value="192.168.0.103")
     ip_addresses = get_connected_devices()
     server_combobox = ttk.Combobox(frame, textvariable=server_var, values=ip_addresses, font=input_font, width=25, justify='center')
     server_combobox.pack(pady=(0, 20))
