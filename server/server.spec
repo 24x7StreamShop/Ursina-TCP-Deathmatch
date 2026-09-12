@@ -3,9 +3,11 @@
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=['.'],
     binaries=[],
-    datas=[],
+    datas=[
+        ('server.ico', '.'),
+    ],
     hiddenimports=['art', 'json'],
     hookspath=[],
     hooksconfig={},
@@ -26,7 +28,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
@@ -35,5 +37,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon.ico'],
+    icon=['server.ico'],
 )

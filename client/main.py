@@ -1,10 +1,58 @@
 import os
 import sys
+from pathlib import Path
+
+# Resolve base directory relative to the client folder (or PyInstaller extraction directory)
+if getattr(sys, 'frozen', False):
+    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    os.environ['PANDA_PRC_DIR'] = os.path.join(base_dir, 'panda3d', 'etc')
+    panda3d_dir = os.path.join(base_dir, 'panda3d')
+    if os.path.isdir(panda3d_dir):
+        try:
+            os.add_dll_directory(panda3d_dir)
+        except Exception:
+            pass
+else:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Always switch working directory to base_dir so all relative paths ("assets/...") resolve cleanly
+os.chdir(base_dir)
+
 import time
 import socket
 import threading
 import queue
 import ursina
+
+# Point Ursina application and texture folders directly to base_dir
+ursina.application.asset_folder = Path(base_dir)
+if hasattr(ursina, 'texture_importer') and hasattr(ursina.texture_importer, 'folders'):
+    for p in (Path(base_dir), Path(base_dir) / 'assets'):
+        if p not in ursina.texture_importer.folders:
+            ursina.texture_importer.folders.insert(0, p)
+
+# Normalize backslashes in texture loader so pathlib.glob doesn't fail on Windows
+orig_load_texture = ursina.load_texture
+def safe_load_texture(name, *args, **kwargs):
+    if isinstance(name, str):
+        name = name.replace('\\', '/')
+    return orig_load_texture(name, *args, **kwargs)
+
+ursina.load_texture = safe_load_texture
+if hasattr(ursina, 'texture_importer'):
+    ursina.texture_importer.load_texture = safe_load_texture
+
+if getattr(sys, 'frozen', False):
+    try:
+        import panda3d.core as p3d
+        p_base = p3d.Filename.fromOsSpecific(str(base_dir))
+        p_panda = p3d.Filename.fromOsSpecific(os.path.join(base_dir, 'panda3d'))
+        p3d.getModelPath().append_path(p_base)
+        p3d.getModelPath().append_path(p3d.Filename.fromOsSpecific(os.path.join(base_dir, 'panda3d', 'models')))
+        p3d.loadPrcFileData('', f'plugin-path {p_panda}\nplugin-path {p_base}')
+    except Exception as e:
+        print(f"[WARNING] Panda3D runtime setup: {e}")
+
 from network import Network
 from floor import Floor
 from map import Map
@@ -29,6 +77,13 @@ def get_connected_devices():
 
 def get_user_input():
     root = tk.Tk()
+    root.title("Ursina TCP Deathmatch")
+    icon_file = "client.ico" if os.path.exists("client.ico") else ("icon.ico" if os.path.exists("icon.ico") else None)
+    if icon_file:
+        try:
+            root.iconbitmap(icon_file)
+        except Exception:
+            pass
     root.attributes('-fullscreen', True)
     # root.geometry("800x600")  # You can start with a default size
     # root.resizable(True, True)  # Make the window resizable
@@ -109,7 +164,7 @@ def get_user_input():
 
     def on_close():
         root.destroy()
-        exit()
+        sys.exit()
 
     ok_button = tk.Button(frame, text="Play", command=on_ok, font=input_font, bg='green', fg='white')
     ok_button.pack(side=tk.RIGHT, padx=10)
@@ -170,6 +225,12 @@ if hasattr(ursina.window, 'borderless'):
     ursina.window.borderless = False
 if hasattr(ursina.window, 'title'):
     ursina.window.title = "Ursina FPS"
+icon_file = "client.ico" if os.path.exists("client.ico") else ("icon.ico" if os.path.exists("icon.ico") else None)
+if icon_file and hasattr(ursina.window, 'icon'):
+    try:
+        ursina.window.icon = icon_file
+    except Exception:
+        pass
 if hasattr(ursina.window, 'exit_button') and ursina.window.exit_button:
     ursina.window.exit_button.enabled = False
 
@@ -177,7 +238,7 @@ floor = Floor()
 map = Map()
 sky = ursina.Entity(
     model="sphere",
-    texture=os.path.join("assets", "sky.png"),
+    texture="assets/sky.png",
     scale=9999,
     double_sided=True
 )
@@ -291,7 +352,7 @@ def update():
 
     if ursina.held_keys['escape']:
         n.close()
-        exit()
+        sys.exit()
 
     while not msg_queue.empty():
         try:
