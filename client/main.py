@@ -7,8 +7,9 @@ import ursina
 from network import Network
 from floor import Floor
 from map import Map
+import random
 from player import Player
-from enemy import Enemy
+from enemy import Enemy, COLOR_NAMES, COLOR_PALETTE
 from bullet import Bullet
 import tkinter as tk
 from tkinter import font, ttk
@@ -54,15 +55,39 @@ def get_user_input():
     username_label = tk.Label(frame, text="Enter your username:", font=custom_font, fg='lightblue', bg='#010d25')
     username_label.pack(pady=20)
 
-    username_var = tk.StringVar(value="Default")
-    username_entry = tk.Entry(frame, textvariable=username_var, font=input_font, width=25, justify='center')
-    username_entry.pack(pady=10)
+    default_color_name = random.choice(COLOR_NAMES)
+    username_var = tk.StringVar(value=default_color_name)
+    username_entry = ttk.Combobox(frame, textvariable=username_var, values=COLOR_NAMES, font=input_font, width=25, justify='center')
+    username_entry.pack(pady=(10, 5))
+
+    color_indicator = tk.Label(frame, text="", font=("Arial", 12, "bold"), bg='#010d25')
+    color_indicator.pack(pady=(0, 10))
+
+    def update_color_indicator(*args):
+        val = username_var.get().strip().title()
+        if val in COLOR_PALETTE:
+            rgb = COLOR_PALETTE[val]
+            hex_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+            color_indicator.config(text=f"● Player Color: {val}", fg=hex_color)
+        else:
+            found = False
+            for cname, rgb in COLOR_PALETTE.items():
+                if cname.lower() in val.lower():
+                    hex_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+                    color_indicator.config(text=f"● Player Color: {cname}", fg=hex_color)
+                    found = True
+                    break
+            if not found:
+                color_indicator.config(text="● Custom Username", fg='lightblue')
+
+    username_var.trace_add("write", update_color_indicator)
+    update_color_indicator()
 
     # Server IP
     server_label = tk.Label(frame, text="Enter server address:", font=custom_font, fg='lightblue', bg='#010d25')
     server_label.pack(pady=(20, 10))
 
-    server_var = tk.StringVar(value="192.168.1.2")
+    server_var = tk.StringVar(value="10.108.44.204")
     ip_addresses = get_connected_devices()
     server_combobox = ttk.Combobox(frame, textvariable=server_var, values=ip_addresses, font=input_font, width=25, justify='center')
     server_combobox.pack(pady=(0, 20))

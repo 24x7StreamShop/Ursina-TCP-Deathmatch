@@ -2,18 +2,21 @@ import ursina
 from PIL import Image
 
 # Palette of distinct colors for players entering the lobby
-PLAYER_COLORS = [
-    (52, 152, 219),   # Blue
-    (46, 204, 113),   # Green
-    (230, 126, 34),   # Orange
-    (155, 89, 182),   # Purple
-    (241, 196, 15),   # Yellow
-    (231, 76, 60),    # Red
-    (26, 188, 156),   # Turquoise
-    (236, 64, 122),   # Pink
-    (0, 188, 212),    # Cyan
-    (139, 195, 74),   # Lime Green
-]
+COLOR_PALETTE = {
+    "Blue": (52, 152, 219),
+    "Green": (46, 204, 113),
+    "Orange": (230, 126, 34),
+    "Purple": (155, 89, 182),
+    "Yellow": (241, 196, 15),
+    "Red": (231, 76, 60),
+    "Turquoise": (26, 188, 156),
+    "Pink": (236, 64, 122),
+    "Cyan": (0, 188, 212),
+    "Lime": (139, 195, 74),
+}
+
+COLOR_NAMES = list(COLOR_PALETTE.keys())
+PLAYER_COLORS = list(COLOR_PALETTE.values())
 
 _texture_cache = {}
 
@@ -21,7 +24,16 @@ _texture_cache = {}
 def get_player_color(identifier, username=None):
     """
     Map player identifier or username to a distinct color from the palette.
+    If username matches a known color name, that color is prioritized.
     """
+    if username:
+        clean_name = str(username).strip().title()
+        if clean_name in COLOR_PALETTE:
+            return COLOR_PALETTE[clean_name]
+        for cname, rgb in COLOR_PALETTE.items():
+            if cname.lower() in str(username).lower():
+                return rgb
+
     try:
         idx = (int(identifier) - 1) % len(PLAYER_COLORS)
     except (ValueError, TypeError):
