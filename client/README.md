@@ -1,149 +1,102 @@
-# 🐳 How to Dockerize a GUI-based Ursina Game Client
+# Ursina Deathmatch Client
 
-**by [imvickykumar999](https://hub.docker.com/repositories/imvickykumar999)**
+This is the Docker client for Ursina TCP Deathmatch. It opens the game window and connects to a running deathmatch server.
 
-If you're building a Python game using [Ursina Engine](https://www.ursinaengine.org/) and want to **distribute it without requiring your users to install Python**, Docker is a great solution.
+## Before You Start
 
-In this post, I'll walk you through how I Dockerized my multiplayer shooting game client that uses **Tkinter** for user input and **Ursina/Pygame** for rendering the game.
+You need:
 
----
+- Docker Desktop or Docker Engine
+- A running game server
+- A graphical desktop session
+- The server IPv4 address and TCP port
 
-## 📁 Project Structure
-
-Here's what the `client/` folder looked like before Dockerizing:
-
-```
-client/
-├── assets/
-├── main.py
-├── bullet.py
-├── enemy.py
-├── floor.py
-├── map.py
-├── network.py
-├── player.py
-├── setup.py
-└── requirements.txt
-```
-
----
-
-## 🐋 Dockerfile Explained
-
-Below is the Dockerfile I used to build the image for my game:
-
-```dockerfile
-# Use official Python image with minimal footprint
-FROM python:3.10-slim
-
-# Metadata
-LABEL maintainer="imvickykumar999"
-
-# Set working directory inside container
-WORKDIR /usr/src/app
-
-# Install system dependencies required for Ursina and GUI support
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libxrender1 \
-    libxrandr2 \
-    libxcursor1 \
-    libxi6 \
-    libxcomposite1 \
-    libasound2 \
-    libpulse0 \
-    ffmpeg \
-    build-essential \
-    python3-dev \
-    python3-tk && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Python packages
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the game files
-COPY . .
-
-# Run the game
-CMD ["python", "main.py"]
-```
-
----
-
-## 🧰 Building the Docker Image
-
-In your terminal, from inside the `client` folder (or wherever your Dockerfile is located):
+The default server port is `8888`. Start the server from the repository's `server` folder before launching the client:
 
 ```bash
-docker build -t ursina-client .
+python main.py
 ```
 
-You can then tag and push it to Docker Hub:
+The server host should share its displayed IPv4 address with the players. Players on the same computer can use `127.0.0.1`; players on the same LAN should use the server computer's local IPv4 address.
+
+## Pull the Image
+
+Pull the published image from Docker Hub:
 
 ```bash
-docker tag ursina-client imvickykumar999/ursina-client:latest
-docker push imvickykumar999/ursina-client:latest
+docker pull imvickykumar999/ursina-client:latest
 ```
 
----
+## Play on Linux
 
-## 🖥️ Running the Game (on Ubuntu/Linux)
-
-Running GUI apps in Docker on **Linux** is straightforward:
+The client uses X11 to display its Ursina and Tkinter windows. Allow the Docker container to use the local X server, then run the image:
 
 ```bash
 xhost +local:docker
 
-docker run -it --rm \
+docker run --rm -it \
   -e DISPLAY=$DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   imvickykumar999/ursina-client:latest
 ```
 
-> ✅ This shares the host's X11 display with the container, allowing your game to show a window even though it's inside Docker.
+The connection screen opens inside the container. Enter your username, the server address, and port `8888`, then select **Play**.
 
----
-
-## 🪟 What About Windows?
-
-On Windows, running GUI from Docker requires additional tools like:
-
-* **VcXsrv** or **X410** to create an X11 server
-* Using `host.docker.internal:0.0` as the display
-
-But honestly, **Linux is simpler** and recommended for testing GUI Docker containers.
-
----
-
-## 🧪 Want to Test if X11 Works?
-
-Run this command to test if GUI works from Docker:
+When finished, optionally restore the X server access rule:
 
 ```bash
-docker run -it --rm \
-  -e DISPLAY=$DISPLAY \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  x11apps/xeyes
+xhost -local:docker
 ```
 
-If you see 👀 eyes following your cursor, X11 works — and so will your game!
+## Play on Windows
 
----
+Docker Desktop containers need an X server to show a Linux GUI. Install and start [VcXsrv](https://sourceforge.net/projects/vcxsrv/) or X410, then configure it to accept connections.
 
-## 📦 Final Image on Docker Hub
+In PowerShell, set the display address and run the image:
 
-You can pull and run my Ursina game client from:
+```powershell
+$env:DISPLAY = "host.docker.internal:0.0"
 
-👉 [docker.io/imvickykumar999/ursina-client](https://hub.docker.com/r/imvickykumar999/ursina-client)
+docker run --rm -it `
+  -e DISPLAY=$env:DISPLAY `
+  imvickykumar999/ursina-client:latest
+```
+
+If the game window does not appear, check that the X server is running, that its access control allows Docker Desktop, and that Windows Firewall is not blocking it. Using the client directly with Python is usually simpler on Windows when Docker GUI forwarding is unavailable:
+
+```powershell
+python main.py
+```
+
+## Controls
+
+| Action | Control |
+| --- | --- |
+| Move | `W` `A` `S` `D` |
+| Jump | `Space` |
+| Aim | Mouse |
+| Shoot | Left mouse button |
+| Respawn | `R`, `Space`, `Enter`, or the respawn button |
+| Exit | `Esc` |
+
+## Connecting to a Public Server
+
+If the server is hosted outside your LAN, use its public IP address or hostname in the connection screen. The server host must expose or forward TCP port `8888` to the machine running `server/main.py`. If a tunneling service is used, enter the TCP host and port supplied by that service.
+
+## Troubleshooting
+
+- **Connection refused:** Confirm that the server is running and that the address and port are correct.
+- **Connection timeout:** Check the server firewall, port forwarding, and tunnel status.
+- **No game window:** Configure an X server and verify the `DISPLAY` value. Docker containers cannot display GUI applications without a host display server.
+- **Missing textures or audio:** Use the published image, which includes the client assets, or build from the `client` directory so the `assets/` folder is copied into the image.
+- **Port mismatch:** Use the same port shown by the server. The default is `8888`.
+
+## Build the Image Locally
+
+To build your own image instead of pulling from Docker Hub, run this from the `client` directory:
 
 ```bash
-docker pull imvickykumar999/ursina-client
+docker build -t ursina-client .
 ```
 
----
-
-## 💡 Bonus: No GUI?
-
-If you want to skip GUI popups and pass arguments instead of using Tkinter, you can modify `main.py` to accept command-line arguments (`argparse`), which makes the container even more portable — even to headless environments.
+Then replace `imvickykumar999/ursina-client:latest` in the commands above with `ursina-client`.
