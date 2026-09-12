@@ -1,21 +1,87 @@
 import ursina
+from PIL import Image
+
+# Palette of distinct colors for players entering the lobby
+PLAYER_COLORS = [
+    (52, 152, 219),   # Blue
+    (46, 204, 113),   # Green
+    (230, 126, 34),   # Orange
+    (155, 89, 182),   # Purple
+    (241, 196, 15),   # Yellow
+    (231, 76, 60),    # Red
+    (26, 188, 156),   # Turquoise
+    (236, 64, 122),   # Pink
+    (0, 188, 212),    # Cyan
+    (139, 195, 74),   # Lime Green
+]
+
+_texture_cache = {}
+
+
+def get_player_color(identifier, username=None):
+    """
+    Map player identifier or username to a distinct color from the palette.
+    """
+    try:
+        idx = (int(identifier) - 1) % len(PLAYER_COLORS)
+    except (ValueError, TypeError):
+        key = str(username or identifier or "player")
+        idx = abs(hash(key)) % len(PLAYER_COLORS)
+    return PLAYER_COLORS[idx]
+
+
+def create_player_texture(color_rgb):
+    """
+    Generate a 64x64 procedural colored cube texture with border shading,
+    providing visual depth instead of using assets/DP.jpg.
+    Cached by color to avoid recreating identical textures.
+    """
+    key = tuple(color_rgb[:3])
+    if key in _texture_cache:
+        return _texture_cache[key]
+
+    width, height = 64, 64
+    border_color = tuple(max(0, int(c * 0.65)) for c in key) + (255,)
+    inner_color = tuple(key) + (255,)
+    img = Image.new("RGBA", (width, height), inner_color)
+
+    for x in range(width):
+        for b in (0, 1, height - 2, height - 1):
+            img.putpixel((x, b), border_color)
+    for y in range(height):
+        for b in (0, 1, width - 2, width - 1):
+            img.putpixel((b, y), border_color)
+
+    tex = ursina.Texture(img)
+    _texture_cache[key] = tex
+    return tex
 
 
 class Enemy(ursina.Entity):
-    def __init__(self, position: ursina.Vec3, identifier: str, username: str):
+    def __init__(self, position: ursina.Vec3, identifier: str, username: str, color_rgb=None):
+        # Initialize attributes early to prevent race condition crashes if update() is called during creation
+        self.health = 100
+        self.id = identifier
+        self.username = username
+        self.gun = None
+        self.name_tag = None
+
+        if color_rgb is None:
+            self.color_rgb = get_player_color(identifier, username)
+        else:
+            self.color_rgb = color_rgb
+
+        player_texture = create_player_texture(self.color_rgb)
+
         super().__init__(
             position=position,
             model="cube",
             origin_y=-0.5,
             collider="box",
-            texture="assets/DP.jpg", #"white_cube",
+            texture=player_texture,
             color=ursina.color.hsv(0, 0, 1),
             scale=ursina.Vec3(1, 2, 1)
         )
-
-        if hasattr(self, 'model_entity'):
-            self.model_entity.uvs = [ursina.Vec2(1 - uv[0], uv[1]) for uv in self.model_entity.uvs]
-            self.model_entity.generate()
 
         self.gun = ursina.Entity(
             parent=self,
@@ -35,11 +101,14 @@ class Enemy(ursina.Entity):
             origin=ursina.Vec2(0, 0)
         )
 
-        self.health = 100
-        self.id = identifier
-        self.username = username
-
     def update(self):
+        if not hasattr(self, 'health') or self.health is None:
+            return
+        if not hasattr(self, 'gun') or not self.gun:
+            return
+        if not hasattr(self, 'name_tag') or not self.name_tag:
+            return
+
         if self.health <= 0:
             self.visible = False
             self.gun.visible = False
@@ -64,8 +133,10 @@ class Enemy(ursina.Entity):
         self.world_position = position
         self.health = health
         self.visible = True
-        self.gun.visible = True
-        self.name_tag.visible = True
+        if hasattr(self, 'gun') and self.gun:
+            self.gun.visible = True
+        if hasattr(self, 'name_tag') and self.name_tag:
+            self.name_tag.visible = True
         self.collider = "box"
         self.color = ursina.color.hsv(0, 0, 1)
 
