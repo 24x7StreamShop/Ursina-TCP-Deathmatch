@@ -2,6 +2,10 @@
 
 A small multiplayer first-person deathmatch game built with [Ursina](https://www.ursinaengine.org/) and Python TCP sockets. One player runs the server and other players connect as clients over a local network or a reachable public address.
 
+![Enter Game](https://github.com/user-attachments/assets/5b8176bb-78be-4212-8782-6b41f9232a22)
+![Shoot and Run](https://github.com/user-attachments/assets/e44349bd-d11a-4ce0-812f-747f95e70794)
+![Respawn](https://github.com/user-attachments/assets/c6f43550-f8c6-4251-86ad-35b5c2d468d1)
+
 ## Features
 
 - First-person movement, jumping, shooting, health, death, and respawning
