@@ -1,6 +1,6 @@
 # 🐳 How to Dockerize a GUI-based Ursina Game Client
 
-**by [github.com/imvickykumar999](https://github.com/imvickykumar999/Multiplayer-Shooting-Game)**
+**Docker Image: [imvickykumar999/ursina-client](https://hub.docker.com/r/imvickykumar999/ursina-client)**
 
 ![WhatsApp Image 2025-06-01 at 12 20 11_12e2a83a](https://github.com/user-attachments/assets/92f62308-d848-468c-a56c-e10e9e079fe1)
 ![image](https://github.com/user-attachments/assets/a09c1895-5d4a-49d8-b327-ec985fa8ad5d)
