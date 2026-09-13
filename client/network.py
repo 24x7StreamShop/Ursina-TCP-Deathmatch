@@ -129,7 +129,7 @@ class Network:
             "health": player.health
         })
 
-    def send_respawn(self, position=(0, 1, 0), health=100):
+    def send_respawn(self, position=(0, 1, 0), health=250):
         if hasattr(position, "x"):
             pos = (position.x, position.y, position.z)
         else:

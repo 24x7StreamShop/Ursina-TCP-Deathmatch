@@ -4,6 +4,9 @@ from bullet import Bullet
 from enemy import get_player_color, create_player_texture
 
 
+MAX_HEALTH = 250
+
+
 class Player(FirstPersonController):
     def __init__(self, position: ursina.Vec3, network):
         super().__init__(
@@ -51,8 +54,18 @@ class Player(FirstPersonController):
             position=ursina.Vec3(0, 0.45, -0.01),
             scale=self.healthbar_size
         )
+        self.max_health = MAX_HEALTH
+        self.health = self.max_health
 
-        self.health = 100
+        self.health_text = ursina.Text(
+            parent=ursina.camera.ui,
+            text=f"{int(self.health)} / {self.max_health} HP",
+            position=ursina.Vec2(0, 0.41),
+            origin=ursina.Vec2(0, 0),
+            scale=1.0,
+            color=ursina.color.white
+        )
+
         self.network = network
         self.gun_sound = ursina.Audio('assets/bullet.mp3', autoplay=False)
         self.death_message_shown = False
@@ -119,6 +132,8 @@ class Player(FirstPersonController):
         self.gun.enabled = False
         self.healthbar.enabled = False
         self.healthbar_bg.enabled = False
+        if hasattr(self, 'health_text') and self.health_text:
+            self.health_text.enabled = False
 
         self.rotation = ursina.Vec3(0, 0, 0)
         self.camera_pivot.world_rotation_x = -45
@@ -154,7 +169,7 @@ class Player(FirstPersonController):
         if self.timer_text:
             self.timer_text.enabled = False
 
-        self.health = 100
+        self.health = self.max_health
         self.gravity = 1
         self.air_time = 0
         self.death_message_shown = False
@@ -169,6 +184,9 @@ class Player(FirstPersonController):
         self.healthbar.enabled = True
         self.healthbar_bg.enabled = True
         self.healthbar.scale_x = self.healthbar_size.x
+        if hasattr(self, 'health_text') and self.health_text:
+            self.health_text.enabled = True
+            self.health_text.text = f"{int(self.health)} / {self.max_health} HP"
 
         self.cursor.color = ursina.color.rgba(255, 0, 0, 122)
         ursina.mouse.locked = True
@@ -187,7 +205,9 @@ class Player(FirstPersonController):
                 return
 
             if hasattr(self, 'healthbar') and self.healthbar and self.healthbar.enabled:
-                self.healthbar.scale_x = max(0.0, (self.health / 100.0) * self.healthbar_size.x)
+                self.healthbar.scale_x = max(0.0, (self.health / float(self.max_health)) * self.healthbar_size.x)
+            if hasattr(self, 'health_text') and self.health_text and self.health_text.enabled:
+                self.health_text.text = f"{int(max(0, self.health))} / {self.max_health} HP"
 
             super().update()
         else:

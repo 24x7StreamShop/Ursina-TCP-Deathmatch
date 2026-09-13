@@ -12,6 +12,7 @@ from art import *
 PORT = 8888 # this should be same as you define in playit.gg dashboard
 ADDR = "0.0.0.0"
 MAX_PLAYERS = 10
+MAX_HEALTH = 250
 MSG_SIZE = 2048
 
 # Setup server socket
@@ -160,7 +161,7 @@ def main():
             conn.close()
             continue
 
-        new_player_info = {"socket": conn, "username": username, "position": (0, 1, 0), "rotation": 0, "health": 100, "visible": True}
+        new_player_info = {"socket": conn, "username": username, "position": (0, 1, 0), "rotation": 0, "health": MAX_HEALTH, "visible": True}
 
         # Tell existing players about new player
         for player_id in list(players):

@@ -57,7 +57,7 @@ from network import Network
 from floor import Floor
 from map import Map
 import random
-from player import Player
+from player import Player, MAX_HEALTH
 from enemy import Enemy, COLOR_NAMES, COLOR_PALETTE
 from bullet import Bullet
 import tkinter as tk
@@ -298,7 +298,7 @@ def handle_server_info(info):
             username = info.get("username", f"Player {enemy_id}")
             pos = ursina.Vec3(*info["position"]) if "position" in info else ursina.Vec3(0, 1, 0)
             new_enemy = Enemy(pos, enemy_id, username)
-            new_enemy.health = info.get("health", 100)
+            new_enemy.health = info.get("health", MAX_HEALTH)
             enemies.append(new_enemy)
             return
 
@@ -326,7 +326,7 @@ def handle_server_info(info):
 
         if enemy:
             pos = ursina.Vec3(*info["position"]) if "position" in info else ursina.Vec3(0, 1, 0)
-            health = info.get("health", 100)
+            health = info.get("health", MAX_HEALTH)
             enemy.respawn(pos, health)
 
     elif obj_type == "bullet":

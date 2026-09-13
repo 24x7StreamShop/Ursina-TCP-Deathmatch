@@ -69,10 +69,14 @@ def create_player_texture(color_rgb):
     return tex
 
 
+MAX_HEALTH = 250
+
+
 class Enemy(ursina.Entity):
     def __init__(self, position: ursina.Vec3, identifier: str, username: str, color_rgb=None):
         # Initialize attributes early to prevent race condition crashes if update() is called during creation
-        self.health = 100
+        self.max_health = MAX_HEALTH
+        self.health = self.max_health
         self.id = str(identifier)
         self.username = username
         self.gun = None
@@ -107,7 +111,7 @@ class Enemy(ursina.Entity):
 
         self.name_tag = ursina.Text(
             parent=self,
-            text=username,
+            text=f"{username} [{int(self.health)}/{self.max_health}]",
             position=ursina.Vec3(0, 1.3, 0),
             scale=ursina.Vec2(5, 3),
             billboard=True,
@@ -138,14 +142,17 @@ class Enemy(ursina.Entity):
                 self.collision = True
 
             try:
-                color_saturation = max(0.0, min(1.0, 1.0 - self.health / 100.0))
-            except (AttributeError, TypeError):
-                self.health = 100
+                color_saturation = max(0.0, min(1.0, 1.0 - self.health / float(self.max_health)))
+            except (AttributeError, TypeError, ZeroDivisionError):
+                self.health = self.max_health
                 color_saturation = 0.0
 
             self.color = ursina.color.hsv(0, color_saturation, 1)
 
-    def respawn(self, position: ursina.Vec3, health: int = 100):
+            if hasattr(self, 'name_tag') and self.name_tag:
+                self.name_tag.text = f"{self.username} [{int(max(0, self.health))}/{self.max_health}]"
+
+    def respawn(self, position: ursina.Vec3, health: int = MAX_HEALTH):
         self.world_position = position
         self.health = health
         self.is_dead = False
@@ -154,6 +161,7 @@ class Enemy(ursina.Entity):
             self.gun.visible = True
         if hasattr(self, 'name_tag') and self.name_tag:
             self.name_tag.visible = True
+            self.name_tag.text = f"{self.username} [{int(max(0, self.health))}/{self.max_health}]"
         self.collision = True
         self.color = ursina.color.hsv(0, 0, 1)
 
