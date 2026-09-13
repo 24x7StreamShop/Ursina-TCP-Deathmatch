@@ -9,6 +9,18 @@ import random
 import threading
 from art import *
 
+try:
+    from colorama import Fore, Style, init
+    init(autoreset=True)
+    RED = Fore.RED + Style.BRIGHT
+    BLUE = Fore.BLUE + Style.BRIGHT
+    RESET = Style.RESET_ALL
+except ImportError:
+    RED = ""
+    BLUE = ""
+    RESET = ""
+
+
 PORT = 8888 # this should be same as you define in playit.gg dashboard
 ADDR = "0.0.0.0"
 MAX_PLAYERS = 10
@@ -66,10 +78,10 @@ def handle_messages(identifier: str):
         try:
             msg_json = json.loads(msg_decoded)
         except Exception as e:
-            print(e)
+            print(f"{RED}[!] Error: {e}{RESET}")
             continue
 
-        print(f"Received message from player {username} with ID {identifier}")
+        print(f"{BLUE}[>] Received message from player {RED}{username}{BLUE} with ID {RED}{identifier}{RESET}")
 
         if msg_json["object"] == "player":
             players[identifier]["position"] = msg_json["position"]
@@ -135,18 +147,23 @@ def handle_messages(identifier: str):
             except OSError:
                 pass
 
-    print(f"Player {username} with ID {identifier} has left the game...")
+    print(f"{RED}[-] Player {BLUE}{username}{RED} with ID {BLUE}{identifier}{RED} has left the game...{RESET}")
     del players[identifier]
     conn.close()
 
 
 def main():
     hostname = socket.gethostname()
-    server_addr = f'{socket.gethostbyname(hostname)}:{PORT}'
+    server_addr = f'{socket.gethostbyname(hostname)}'
 
-    print("\nServer started, listening for new connections...")
-    print(f'IPV4 Address = {server_addr}\n')
-    tprint(server_addr)
+    print(f"\n{BLUE}{'=' * 50}{RESET}")
+    print(f"{BLUE}[*] Server started, listening for new connections...{RESET}")
+    print(f"{BLUE}[*] IPV4 Address = {RED}{server_addr}{RESET}")
+    print(f"{BLUE}{'=' * 50}\n{RESET}")
+    for i, line in enumerate(text2art(server_addr).splitlines()):
+        color = BLUE if i % 2 == 0 else RED
+        print(f"{color}{line}{RESET}")
+    print()
 
     while True:
         # Accept new connection and assign unique ID
@@ -157,7 +174,7 @@ def main():
         try:
             username = conn.recv(MSG_SIZE).decode("utf8")
         except UnicodeDecodeError as e:
-            print(f"Failed to decode username: {e}")
+            print(f"{RED}[!] Failed to decode username: {e}{RESET}")
             conn.close()
             continue
 
@@ -206,22 +223,23 @@ def main():
         msg_thread = threading.Thread(target=handle_messages, args=(new_id,), daemon=True)
         msg_thread.start()
 
-        print(f"New connection from {addr}, assigned ID: {new_id}...")
+        print(f"{BLUE}[+] New connection from {RED}{addr}{BLUE}, assigned ID: {RED}{new_id}{RESET}")
 
 
 if __name__ == "__main__":
-    while True:
-        try:
-            main()
-        except KeyboardInterrupt:
-            print("Server stopped manually.")
-            break  # Allow graceful shutdown on Ctrl+C
-        except SystemExit:
-            print("System exit triggered.")
-            break
-        except Exception as e:
-            print(f"Server crashed with error: {e}")
-            print("Restarting server in 5 seconds...\n")
-            time.sleep(5)
-        finally:
-            s.close()
+    try:
+        while True:
+            try:
+                main()
+            except KeyboardInterrupt:
+                print(f"\n{RED}[!] Server stopped manually.{RESET}")
+                break  # Allow graceful shutdown on Ctrl+C
+            except SystemExit:
+                print(f"\n{RED}[!] System exit triggered.{RESET}")
+                break
+            except Exception as e:
+                print(f"\n{RED}[!] Server crashed with error: {e}{RESET}")
+                print(f"{RED}[!] Restarting server in 5 seconds...\n{RESET}")
+                time.sleep(5)
+    finally:
+        s.close()
