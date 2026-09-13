@@ -84,11 +84,24 @@ class Player(FirstPersonController):
             ursina.Vec3(-16, 6, 0),
         ]
 
-        # Persistent Death Screen UI elements (no destruction / recreation)
+        # Persistent Death Screen UI elements (clean original background image)
+        self.death_bg = ursina.Entity(
+            parent=ursina.camera.ui,
+            model="quad",
+            texture="assets/background.jpg",
+            scale=ursina.Vec2(2.0, 1.05),
+            position=ursina.Vec3(0, 0, 0.1),
+            color=ursina.color.white,
+            enabled=False
+        )
+        if self.death_bg.texture:
+            self.death_bg.texture.filtering = 'bilinear'
+
         self.death_title = ursina.Text(
             text="YOU DIED",
             origin=ursina.Vec2(0, 0),
             y=0.2,
+            z=-0.05,
             scale=3.5,
             color=ursina.color.red,
             enabled=False
@@ -98,6 +111,7 @@ class Player(FirstPersonController):
             text="Press [R] or [SPACE] to Respawn  |  [ESC] to Exit",
             origin=ursina.Vec2(0, 0),
             y=0.08,
+            z=-0.05,
             scale=1.3,
             color=ursina.color.white,
             enabled=False
@@ -108,7 +122,7 @@ class Player(FirstPersonController):
             color=ursina.color.azure,
             highlight_color=ursina.color.cyan,
             scale=ursina.Vec2(0.25, 0.08),
-            position=ursina.Vec2(0, -0.05),
+            position=ursina.Vec3(0, -0.05, -0.05),
             on_click=self.respawn,
             enabled=False
         )
@@ -118,6 +132,7 @@ class Player(FirstPersonController):
             text="Auto-respawn in 5s...",
             origin=ursina.Vec2(0, 0),
             y=-0.14,
+            z=-0.05,
             scale=1.1,
             color=ursina.color.light_gray,
             enabled=False
@@ -146,6 +161,12 @@ class Player(FirstPersonController):
         if self.network:
             self.network.send_player(self)
 
+        if hasattr(self, 'death_bg') and self.death_bg:
+            aspect = getattr(ursina.camera, 'aspect_ratio', 16/9)
+            self.death_bg.scale = ursina.Vec2(max(aspect, 1.8) * 1.02, 1.02)
+            self.death_bg.color = ursina.color.white
+            self.death_bg.enabled = True
+
         self.death_title.enabled = True
         self.death_subtitle.enabled = True
         self.respawn_button.enabled = True
@@ -160,6 +181,8 @@ class Player(FirstPersonController):
         import random
 
         # Hide death UI elements safely without destroying them
+        if hasattr(self, 'death_bg') and self.death_bg:
+            self.death_bg.enabled = False
         if self.death_title:
             self.death_title.enabled = False
         if self.death_subtitle:
