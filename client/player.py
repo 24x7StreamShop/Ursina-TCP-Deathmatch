@@ -64,6 +64,11 @@ class Player(FirstPersonController):
             ursina.Vec3(12, 1, 12),
             ursina.Vec3(-6, 1, -6),
             ursina.Vec3(6, 1, -6),
+            # 1st Floor spawn points
+            ursina.Vec3(0, 6, 14),
+            ursina.Vec3(0, 6, -14),
+            ursina.Vec3(16, 6, 0),
+            ursina.Vec3(-16, 6, 0),
         ]
 
         # Persistent Death Screen UI elements (no destruction / recreation)
