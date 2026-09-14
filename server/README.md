@@ -39,7 +39,7 @@ The server prints its Tailscale IPv4 address (if active) and local IPv4 address 
 
 Clients must connect to the server machine's IPv4 address on port `8888`.
 
-- **Via Tailscale (Recommended for remote play):** Run Tailscale on both the host and client devices. Clients connect using the host's Tailscale IPv4 address (e.g. `100.x.y.z`). No port forwarding is required!
+- **Via Tailscale (Recommended for remote play):** Install Tailscale from [https://tailscale.com/download](https://tailscale.com/download) on host and client devices. Clients connect using the host's Tailscale IPv4 address (e.g. `100.x.y.z`). No port forwarding or router changes required!
 - **Local Network (LAN):** For computers on the same network, clients connect to the server machine's local LAN IP. Allow inbound TCP traffic on port `8888` in the server machine's firewall.
 - **Port Forwarding / Tunnels:** For direct internet access without a mesh VPN, forward TCP port `8888` on your router or use an external TCP tunnel. The port is defined by `PORT` in `main.py` and must match the client configuration.
 
