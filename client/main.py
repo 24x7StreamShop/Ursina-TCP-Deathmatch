@@ -68,12 +68,108 @@ import pygame
 
 PORT = 8888 # this port is what you get from playit.gg dashboard
 
+def get_tailscale_ip():
+    """Detect Tailscale IPv4 address if Tailscale is running."""
+    try:
+        for iface, addrs in psutil.net_if_addrs().items():
+            if 'tailscale' in iface.lower():
+                for a in addrs:
+                    if getattr(a, 'family', None) == socket.AF_INET and not a.address.startswith('127.'):
+                        return a.address
+    except Exception:
+        pass
+
+    try:
+        hostname = socket.gethostname()
+        for ip in socket.gethostbyname_ex(hostname)[2]:
+            parts = [int(p) for p in ip.split('.') if p.isdigit()]
+            if len(parts) == 4 and parts[0] == 100 and (64 <= parts[1] <= 127):
+                return ip
+    except Exception:
+        pass
+
+    try:
+        import subprocess
+        res = subprocess.run(['tailscale', 'ip', '-4'], capture_output=True, text=True, timeout=2)
+        if res.returncode == 0:
+            ip = res.stdout.strip().splitlines()[0].strip()
+            if ip:
+                return ip
+    except Exception:
+        pass
+
+    return None
+
+
+def get_tailscale_peers():
+    """Retrieve peer Tailscale IPv4 addresses from local Tailscale daemon."""
+    peers = []
+    try:
+        import subprocess
+        import json
+        res = subprocess.run(['tailscale', 'status', '--json'], capture_output=True, text=True, timeout=2)
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            peer_dict = data.get('Peer') or {}
+            for peer in peer_dict.values():
+                p_ips = peer.get('TailscaleIPs', [])
+                for pip in p_ips:
+                    if '.' in pip and pip not in peers:
+                        peers.append(pip)
+    except Exception:
+        pass
+    return peers
+
+
+def get_local_ip():
+    """Get local network IPv4 address."""
+    try:
+        s_test = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s_test.settimeout(0.5)
+        s_test.connect(('8.8.8.8', 80))
+        ip = s_test.getsockname()[0]
+        s_test.close()
+        if ip and not ip.startswith('127.'):
+            return ip
+    except Exception:
+        pass
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except Exception:
+        return '127.0.0.1'
+
+
 def get_connected_devices():
-    ip_addresses = []
-    for conn in psutil.net_connections(kind='inet'):
-        if conn.raddr and conn.laddr.ip.startswith('192.168.0.'):
-            ip_addresses.append(conn.raddr.ip)
-    return list(set(ip_addresses))
+    """
+    Get prioritized list of candidate server IP addresses.
+    Prioritizes Tailscale IP and peers, followed by local LAN IP and localhost.
+    """
+    ips = []
+    ts_ip = get_tailscale_ip()
+    if ts_ip and ts_ip not in ips:
+        ips.append(ts_ip)
+
+    for peer in get_tailscale_peers():
+        if peer not in ips:
+            ips.append(peer)
+
+    local_ip = get_local_ip()
+    if local_ip and local_ip not in ips:
+        ips.append(local_ip)
+
+    if '127.0.0.1' not in ips:
+        ips.append('127.0.0.1')
+
+    try:
+        for conn in psutil.net_connections(kind='inet'):
+            if conn.raddr and conn.raddr.ip:
+                rip = conn.raddr.ip
+                if conn.raddr.port == PORT and rip not in ips and not rip.startswith('127.'):
+                    ips.append(rip)
+    except Exception:
+        pass
+
+    return ips
 
 def get_user_input():
     root = tk.Tk()
@@ -143,10 +239,18 @@ def get_user_input():
     server_label = tk.Label(frame, text="Enter server address:", font=custom_font, fg='lightblue', bg='#010d25')
     server_label.pack(pady=(20, 10))
 
-    server_var = tk.StringVar(value="192.168.0.103")
     ip_addresses = get_connected_devices()
+    default_ip = ip_addresses[0] if ip_addresses else "127.0.0.1"
+    server_var = tk.StringVar(value=default_ip)
     server_combobox = ttk.Combobox(frame, textvariable=server_var, values=ip_addresses, font=input_font, width=25, justify='center')
-    server_combobox.pack(pady=(0, 20))
+    server_combobox.pack(pady=(0, 5))
+
+    ts_detected = get_tailscale_ip()
+    if ts_detected:
+        ts_hint = tk.Label(frame, text=f"Tailscale IP: {ts_detected}", font=("Arial", 11, "bold"), fg='#00e5ff', bg='#010d25')
+        ts_hint.pack(pady=(0, 15))
+    else:
+        server_combobox.pack_configure(pady=(0, 20))
 
     # Server Port
     port_label = tk.Label(frame, text="Enter port number:", font=custom_font, fg='lightblue', bg='#010d25')

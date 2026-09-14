@@ -7,6 +7,11 @@ import json
 import time
 import random
 import threading
+import subprocess
+try:
+    import psutil
+except ImportError:
+    psutil = None
 from art import *
 
 try:
@@ -152,13 +157,71 @@ def handle_messages(identifier: str):
     conn.close()
 
 
+def get_tailscale_ip():
+    """Detect Tailscale IPv4 address if Tailscale is running."""
+    if psutil:
+        try:
+            for iface, addrs in psutil.net_if_addrs().items():
+                if 'tailscale' in iface.lower():
+                    for a in addrs:
+                        if getattr(a, 'family', None) == socket.AF_INET and not a.address.startswith('127.'):
+                            return a.address
+        except Exception:
+            pass
+
+    try:
+        hostname = socket.gethostname()
+        for ip in socket.gethostbyname_ex(hostname)[2]:
+            parts = [int(p) for p in ip.split('.') if p.isdigit()]
+            if len(parts) == 4 and parts[0] == 100 and (64 <= parts[1] <= 127):
+                return ip
+    except Exception:
+        pass
+
+    try:
+        res = subprocess.run(['tailscale', 'ip', '-4'], capture_output=True, text=True, timeout=2)
+        if res.returncode == 0:
+            ip = res.stdout.strip().splitlines()[0].strip()
+            if ip:
+                return ip
+    except Exception:
+        pass
+
+    return None
+
+
+def get_local_ip():
+    """Get local network IPv4 address."""
+    try:
+        s_test = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s_test.settimeout(0.5)
+        s_test.connect(('8.8.8.8', 80))
+        ip = s_test.getsockname()[0]
+        s_test.close()
+        if ip and not ip.startswith('127.'):
+            return ip
+    except Exception:
+        pass
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except Exception:
+        return '127.0.0.1'
+
+
 def main():
-    hostname = socket.gethostname()
-    server_addr = f'{socket.gethostbyname(hostname)}'
+    tailscale_ip = get_tailscale_ip()
+    local_ip = get_local_ip()
+
+    # Prioritize Tailscale IP if active, otherwise local LAN IP
+    server_addr = tailscale_ip if tailscale_ip else local_ip
 
     print(f"\n{BLUE}{'=' * 50}{RESET}")
-    print(f"{BLUE}[*] Server started, listening for new connections...{RESET}")
-    print(f"{BLUE}[*] IPV4 Address = {RED}{server_addr}{RESET}")
+    print(f"{BLUE}[*] Server started, listening on 0.0.0.0:{PORT}...{RESET}")
+    if tailscale_ip:
+        print(f"{BLUE}[*] Tailscale IP  = {RED}{tailscale_ip}{RESET} (Use this for Tailscale)")
+        print(f"{BLUE}[*] Local LAN IP  = {RED}{local_ip}{RESET} (Use this for same Wi-Fi only)")
+    else:
+        print(f"{BLUE}[*] Local IP      = {RED}{local_ip}{RESET}")
     print(f"{BLUE}{'=' * 50}\n{RESET}")
     for i, line in enumerate(text2art(server_addr).splitlines()):
         color = BLUE if i % 2 == 0 else RED

@@ -33,13 +33,15 @@ On Windows Command Prompt, activate the environment with:
 .venv\Scripts\activate.bat
 ```
 
-The server prints its local IPv4 address when it starts. Press `Ctrl+C` to stop it.
+The server prints its Tailscale IPv4 address (if active) and local IPv4 address when it starts. Press `Ctrl+C` to stop it.
 
 ## Network Setup
 
 Clients must connect to the server machine's IPv4 address on port `8888`.
 
-For computers on the same network, allow inbound TCP traffic on port `8888` in the server machine's firewall. For internet access, forward TCP port `8888` on the router or configure the TCP tunnel used by your deployment. The port is defined by `PORT` in `main.py` and must match the client configuration.
+- **Via Tailscale (Recommended for remote play):** Run Tailscale on both the host and client devices. Clients connect using the host's Tailscale IPv4 address (e.g. `100.x.y.z`). No port forwarding is required!
+- **Local Network (LAN):** For computers on the same network, clients connect to the server machine's local LAN IP. Allow inbound TCP traffic on port `8888` in the server machine's firewall.
+- **Port Forwarding / Tunnels:** For direct internet access without a mesh VPN, forward TCP port `8888` on your router or use an external TCP tunnel. The port is defined by `PORT` in `main.py` and must match the client configuration.
 
 ## Build `server.exe` on Windows
 

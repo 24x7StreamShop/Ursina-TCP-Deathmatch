@@ -45,7 +45,7 @@ From the repository root:
 python server/main.py
 ```
 
-The server listens on port `8888` and prints its local IPv4 address. Keep this terminal open while playing.
+The server listens on port `8888` on all interfaces (`0.0.0.0`) and automatically detects and displays your Tailscale IPv4 address (if Tailscale is running) alongside your local LAN address. Keep this terminal open while playing.
 
 ### 2. Start a client
 
@@ -55,7 +55,10 @@ In a second terminal, from the repository root:
 python client/main.py
 ```
 
-When the connection screen appears, enter a player name, the server address, and port `8888`. For a server on the same computer, use `127.0.0.1`. For another computer on the same LAN, use the server computer's local IPv4 address.
+When the connection screen appears, enter a player name, the server address, and port `8888`.
+- **Over Tailscale:** Use the server machine's Tailscale IPv4 address (e.g. `100.x.y.z`), which is auto-detected and prefilled in the connection dropdown.
+- **On the same computer:** Use `127.0.0.1` or the Tailscale IP.
+- **On the same local Wi-Fi / LAN:** Use the server computer's local IPv4 address.
 
 Every player runs their own copy of the client and connects to the same server. The server allows a maximum of 10 players.
 

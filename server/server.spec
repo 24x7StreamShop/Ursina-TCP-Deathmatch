@@ -8,7 +8,7 @@ a = Analysis(
     datas=[
         ('server.ico', '.'),
     ],
-    hiddenimports=['art', 'json', 'colorama'],
+    hiddenimports=['art', 'json', 'colorama', 'psutil'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
