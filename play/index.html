@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="A practical guide to playing Ursina TCP Deathmatch with a friend over Tailscale.">
+	<title>Play Together From Anywhere | Ursina TCP Deathmatch</title>
+	<style>
+		:root {
+			--ink: #182329;
+			--muted: #5c6b70;
+			--paper: #f7f4ed;
+			--panel: #fffdf8;
+			--line: #d9d8cc;
+			--teal: #087f75;
+			--teal-dark: #07534f;
+			--coral: #d95d39;
+			--yellow: #f4c95d;
+			--shadow: 0 18px 50px rgba(24, 35, 41, .10);
+		}
+
+		* { box-sizing: border-box; }
+		html { scroll-behavior: smooth; }
+		body {
+			margin: 0;
+			color: var(--ink);
+			background: var(--paper);
+			font-family: Georgia, "Times New Roman", serif;
+			line-height: 1.6;
+		}
+		body::before {
+			content: "";
+			position: fixed;
+			inset: 0 0 auto;
+			height: 9px;
+			background: linear-gradient(90deg, var(--coral) 0 22%, var(--yellow) 22% 48%, var(--teal) 48% 100%);
+			z-index: 2;
+		}
+		.wrap { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+		header { padding: 92px 0 64px; }
+		.kicker {
+			color: var(--coral);
+			font: 700 .78rem/1.2 Arial, sans-serif;
+			letter-spacing: .14em;
+			text-transform: uppercase;
+		}
+		h1, h2, h3 { line-height: 1.08; margin: 0; }
+		h1 { max-width: 780px; margin-top: 18px; font-size: clamp(2.8rem, 7vw, 6.4rem); letter-spacing: -.04em; }
+		.dek { max-width: 670px; margin: 24px 0 0; color: var(--muted); font-size: 1.25rem; }
+		.rule { height: 1px; margin: 38px 0 0; background: var(--line); }
+		.warning {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: 18px;
+			align-items: start;
+			margin: 0 0 70px;
+			padding: 24px;
+			border-left: 6px solid var(--coral);
+			background: #fff0e8;
+			box-shadow: var(--shadow);
+		}
+		.warning strong { display: block; margin-bottom: 4px; font-size: 1.15rem; }
+		.warning p { margin: 0; color: #603b31; }
+		.mark {
+			display: grid;
+			width: 36px;
+			height: 36px;
+			place-items: center;
+			border-radius: 50%;
+			color: #fff;
+			background: var(--coral);
+			font: 700 1.3rem Arial, sans-serif;
+		}
+		section { margin: 0 0 78px; }
+		.section-heading { display: flex; gap: 18px; align-items: baseline; margin-bottom: 24px; }
+		.number { color: var(--teal); font: 700 1rem Arial, sans-serif; }
+		h2 { font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -.03em; }
+		h3 { font-size: 1.3rem; }
+		.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+		.step, .checklist, .trouble { padding: 28px; border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
+		.step { min-height: 260px; }
+		.step-number { color: var(--coral); font: 700 2.4rem/1 Arial, sans-serif; }
+		.step h3 { margin: 22px 0 10px; }
+		.step p, .checklist p, .trouble p { margin: 0; color: var(--muted); }
+		code {
+			padding: 2px 6px;
+			color: var(--teal-dark);
+			background: #e5f0eb;
+			font: .92em Consolas, monospace;
+		}
+		.commands { margin: 18px 0 0; padding: 16px 18px; overflow-x: auto; color: #eaf6f0; background: #172c2b; font: .9rem/1.7 Consolas, monospace; }
+		.commands code { padding: 0; color: inherit; background: transparent; }
+		.split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+		.checklist ul, .trouble ul { margin: 16px 0 0; padding-left: 1.2rem; }
+		li { margin: 8px 0; }
+		.accent { border-top: 5px solid var(--teal); }
+		.accent h3 { color: var(--teal-dark); }
+		.trouble { border-top: 5px solid var(--yellow); }
+		footer { padding: 30px 0 55px; color: var(--muted); border-top: 1px solid var(--line); font-size: .95rem; }
+		@media (max-width: 760px) {
+			.wrap { width: min(100% - 28px, 600px); }
+			header { padding: 70px 0 45px; }
+			.warning { margin-bottom: 52px; }
+			.steps, .split { grid-template-columns: 1fr; }
+			.step { min-height: auto; }
+		}
+	</style>
+</head>
+<body>
+	<header class="wrap">
+		<div class="kicker">Ursina TCP Deathmatch / Remote play</div>
+		<h1>Play together, even from different cities.</h1>
+		<p class="dek">Tailscale puts both computers on a private, encrypted network. Once you are connected, your friend joins the game using your Tailscale address, just as if you were on the same Wi-Fi.</p>
+		<div class="rule"></div>
+	</header>
+
+	<main class="wrap">
+		<aside class="warning" aria-label="Security warning">
+			<div class="mark">!</div>
+			<div>
+				<strong>Should you share the reusable link?</strong>
+				<p>Yes, but send it privately and only to the person you trust. Anyone who gets a reusable invite may be able to join your Tailscale network, depending on your admin and access settings. Do not post it in a public chat, screenshot, stream, or repository. After your friend joins, remove or revoke the reusable invite in the Tailscale admin console.</p>
+			</div>
+		</aside>
+
+		<section>
+			<div class="section-heading"><span class="number">01</span><h2>Connect your friend</h2></div>
+			<div class="steps">
+				<article class="step">
+					<div class="step-number">1</div>
+					<h3>Send the invite privately</h3>
+					<p>Send the Tailscale reusable-link URL directly to your friend. Tell them not to forward it. They open it, sign in or create a Tailscale account, and follow the join prompt.</p>
+				</article>
+				<article class="step">
+					<div class="step-number">2</div>
+					<h3>Install Tailscale</h3>
+					<p>Your friend installs Tailscale on the same computer where they will run the game, then signs in with the account that accepted the invite. The Tailscale icon should show that the connection is active.</p>
+				</article>
+				<article class="step">
+					<div class="step-number">3</div>
+					<h3>Check the connection</h3>
+					<p>Both of you should see the other device in Tailscale. You can test it from PowerShell with <code>tailscale ping YOUR_TAILSCALE_IP</code>.</p>
+				</article>
+			</div>
+		</section>
+
+		<section>
+			<div class="section-heading"><span class="number">02</span><h2>Start the match</h2></div>
+			<div class="steps">
+				<article class="step accent">
+					<h3>You are the host</h3>
+					<p>On your computer, start <code>play/server.exe</code>. Keep its terminal window open. It will print a Tailscale IPv4 address beginning with <code>100.</code>, plus the port <code>8888</code>.</p>
+					<div class="commands"><code>Server address: 100.x.y.z<br>Port: 8888</code></div>
+				</article>
+				<article class="step accent">
+					<h3>Send the game address</h3>
+					<p>Send your friend only the Tailscale IP shown by the server, such as <code>100.121.132.98</code>. They should use this address, not your home Wi-Fi address and not your public IP.</p>
+				</article>
+				<article class="step accent">
+					<h3>Your friend joins</h3>
+					<p>Your friend starts <code>play/client.exe</code>, enters your <code>100.x.y.z</code> address, leaves the port at <code>8888</code>, chooses a username, and clicks <strong>Play</strong>.</p>
+				</article>
+			</div>
+		</section>
+
+		<section>
+			<div class="section-heading"><span class="number">03</span><h2>Keep the session tidy</h2></div>
+			<div class="split">
+				<article class="checklist">
+					<h3>Before playing</h3>
+					<ul>
+						<li>Tailscale is running on both computers.</li>
+						<li>Your friend accepted the invite on the account used by Tailscale.</li>
+						<li>You started the server before your friend starts the client.</li>
+						<li>Windows Firewall allows the server on private networks.</li>
+					</ul>
+				</article>
+				<article class="checklist">
+					<h3>After playing</h3>
+					<ul>
+						<li>Close the server window to end the match.</li>
+						<li>Revoke the reusable invite if nobody else needs it.</li>
+						<li>Remove your friend from the tailnet when access should end.</li>
+						<li>Keep your Tailscale address and invite link private.</li>
+					</ul>
+				</article>
+			</div>
+		</section>
+
+		<section>
+			<div class="section-heading"><span class="number">04</span><h2>If it does not connect</h2></div>
+			<article class="trouble">
+				<ul>
+					<li>Confirm the server is still running and listening on port <code>8888</code>.</li>
+					<li>Confirm your friend entered the host's Tailscale <code>100.x.x.x</code> address exactly.</li>
+					<li>Run <code>tailscale status</code> on both computers and check that both devices are online.</li>
+					<li>Run <code>tailscale ping YOUR_TAILSCALE_IP</code> from your friend's computer.</li>
+					<li>If the ping works but the game does not, allow <code>server.exe</code> through Windows Firewall and try again.</li>
+				</ul>
+			</article>
+		</section>
+	</main>
+
+	<footer>
+		<div class="wrap">The game uses TCP port <code>8888</code>. Tailscale removes the need for router port forwarding when both players are connected to the same tailnet.</div>
+	</footer>
+</body>
+</html>
