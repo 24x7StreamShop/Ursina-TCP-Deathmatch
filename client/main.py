@@ -282,6 +282,7 @@ def get_user_input():
     try:
         pygame.mixer.init()
         pygame.mixer.music.load("assets/music.mp3")
+        pygame.mixer.music.set_volume(0.3)
         pygame.mixer.music.play(-1)
     except pygame.error as e:
         print(f"[WARNING] Audio initialization failed: {e}")
@@ -439,6 +440,11 @@ def handle_server_info(info):
         b_x_dir = info["x_direction"]
         b_damage = info.get("damage", 10)
         Bullet(b_pos, b_dir, b_x_dir, n, b_damage, slave=True)
+        try:
+            if player and player.gun_sound:
+                player.gun_sound.play()
+        except Exception:
+            pass
 
     elif obj_type == "health_update":
         enemy_id = str(info.get("id"))
@@ -506,9 +512,10 @@ def input(key):
             player.reload()
         n.send_bullet(bullet)
         try:
-            player.gun_sound.play()
-        except Exception:
-            pass
+            if player.gun_sound:
+                player.gun_sound.play()
+        except Exception as e:
+            print(f"[WARNING] Gun sound playback failed: {e}")
 
 
 def main():

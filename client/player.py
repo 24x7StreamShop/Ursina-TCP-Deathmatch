@@ -90,7 +90,20 @@ class Player(FirstPersonController):
         )
 
         self.network = network
-        self.gun_sound = ursina.Audio('assets/bullet.mp3', autoplay=False)
+        self.gun_sound = None
+        try:
+            import pygame
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+            import os, sys
+            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            sound_path = os.path.join(base_dir, 'assets', 'bullet.mp3')
+            if not os.path.exists(sound_path):
+                sound_path = 'assets/bullet.mp3'
+            self.gun_sound = pygame.mixer.Sound(sound_path)
+            self.gun_sound.set_volume(1.0)
+        except Exception as e:
+            print(f"[WARNING] Gun sound initialization failed: {e}")
         self.death_message_shown = False
 
         self.spawn_points = [
