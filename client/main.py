@@ -488,9 +488,22 @@ def input(key):
             player.respawn()
         return
 
+    if key == "e":
+        player.reload()
+        return
+
     if key == "left mouse down" and player.health > 0:
+        if player.is_reloading:
+            return
+        if player.ammo <= 0:
+            player.reload()
+            return
+
         b_pos = player.position + ursina.Vec3(0, 2, 0)
         bullet = Bullet(b_pos, player.world_rotation_y, -player.camera_pivot.world_rotation_x, n, ignore_entity=player)
+        player.ammo -= 1
+        if player.ammo <= 0:
+            player.reload()
         n.send_bullet(bullet)
         try:
             player.gun_sound.play()
