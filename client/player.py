@@ -66,7 +66,7 @@ class Player(FirstPersonController):
             color=ursina.color.white
         )
 
-        self.magazine_size = 30
+        self.magazine_size = 15
         self.ammo = self.magazine_size
         self.is_reloading = False
         self.reload_time = 2.0
@@ -251,6 +251,15 @@ class Player(FirstPersonController):
         ursina.mouse.locked = True
         ursina.mouse.visible = False
 
+        self.ammo = self.magazine_size
+        self.is_reloading = False
+        self.reload_timer = 0.0
+        self.gun.rotation_z = -5
+        if hasattr(self, 'reload_text') and self.reload_text:
+            self.reload_text.enabled = False
+        if hasattr(self, 'ammo_text') and self.ammo_text:
+            self.ammo_text.text = f"{self.ammo} / {self.magazine_size}"
+
         if self.network:
             if hasattr(self.network, 'send_respawn'):
                 self.network.send_respawn(self.world_position, self.health)
@@ -265,6 +274,9 @@ class Player(FirstPersonController):
         self.reload_text.text = f"Reloading... {self.reload_time:.1f}s"
 
     def update(self):
+        if self.ammo <= 0 and not self.is_reloading and self.health > 0:
+            self.reload()
+
         if self.is_reloading:
             self.reload_timer -= ursina.time.dt
             self.reload_text.enabled = True
