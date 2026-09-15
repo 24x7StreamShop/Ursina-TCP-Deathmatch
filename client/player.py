@@ -74,7 +74,7 @@ class Player(FirstPersonController):
         self.ammo_text = ursina.Text(
             parent=ursina.camera.ui,
             text=f"{self.ammo} / {self.magazine_size}",
-            position=ursina.Vec2(-0.9, -0.82),
+            position=ursina.Vec2(0, 0.36),
             origin=ursina.Vec2(0, 0),
             scale=1.0,
             color=ursina.color.white
@@ -82,7 +82,7 @@ class Player(FirstPersonController):
         self.reload_text = ursina.Text(
             parent=ursina.camera.ui,
             text="Reloading...",
-            position=ursina.Vec2(-0.9, -0.9),
+            position=ursina.Vec2(0, 0.31),
             origin=ursina.Vec2(0, 0),
             scale=0.9,
             color=ursina.color.yellow,
